@@ -18,4 +18,4 @@ else
     echo "bitarray installed"
 fi
 
-python3 setup.py
+python3 machine_learning.py

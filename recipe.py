@@ -15,7 +15,10 @@ class Recipe:
         if (index > len(ingredients)): return false
         return ingredients[index] == 1
 
-    def __str__(self):
+    def __str__(self): #for individuals
         return str(self.uid) + ': ' + str(self.label) + ' -> ' + str(self.ingredients)
+
+    def __repr__(self): #for string iterators
+        return '\n' + str(self.uid) + ': ' + str(self.label)
     
 
