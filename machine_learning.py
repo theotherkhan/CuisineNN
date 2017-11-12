@@ -6,8 +6,8 @@ from jsonReader import decode
 from recipe import Recipe
 from setup import get_ingredients, get_recipes
 
-ingredients_list, ingredients_to_index_dict = get_ingredients()
-list_of_recipes = get_recipes(ingredients_to_index_dict)
+attribute_list, attribute_to_index_dict = get_ingredients()
+training_set = get_recipes(attribute_to_index_dict)
 
-print(list_of_recipes)
-print(list_of_recipes[0])
+print(training_set)
+print(training_set[0])
