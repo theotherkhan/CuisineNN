@@ -1,4 +1,4 @@
-import json
+import simplejson as json
 
 def decode(file):
     with open(file, "r") as ins:
@@ -10,10 +10,10 @@ def decode(file):
             current.append(json.loads(elem))
         return current
 
-ingredients = decode('ingredients.json')
-print(ingredients)
+#ingredients = decode('ingredients.json')
+#print(ingredients)
 
-print("###################################################################")
+#print("###################################################################")
 
-training = decode('training.json')
-print(training)
+#training = decode('training.json')
+#print(training)
