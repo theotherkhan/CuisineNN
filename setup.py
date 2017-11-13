@@ -7,8 +7,7 @@ from jsonReader import decode
 from recipe import Recipe
 
 ''' HEADER INFO '''
-INGREDIENTS_NAME = 'ingredients.json'
-TRAINING_NAME = 'training.json'
+#none
 
 ''' UTILITY FUNCTION(S) '''
 
@@ -17,8 +16,8 @@ def zero_list_maker(n):
     return bitarray(listofzeros) #bitarray(0, n)
 
 ''' SETTING UP INGREDIENTS '''
-def get_ingredients():
-    ingredientsDictJSON = decode(INGREDIENTS_NAME)[0] #dict mapping 'ingredients' to a list of all ingredients
+def get_ingredients(name_of_ingredients_file):
+    ingredientsDictJSON = decode(name_of_ingredients_file)[0] #dict mapping 'ingredients' to a list of all ingredients
     ingredients = [] #list of all ingredients
     for key in ingredientsDictJSON.keys():
         for value in ingredientsDictJSON[key]:
@@ -32,10 +31,10 @@ def get_ingredients():
     return ingredients, ingredientsIndexMapping
 
 ''' SETTING UP RECIPES '''
-def get_recipes(ingredientsIndexMapping):
+def get_recipes(name_of_recipes_file, ingredientsIndexMapping):
     cookbook = [] #a list of recipes
 
-    trainingSet = decode(TRAINING_NAME)
+    trainingSet = decode(name_of_recipes_file)
     ingredientsLength = len(ingredientsIndexMapping.values())
     for dataPoint in trainingSet:
         uid, cuisine, makeUp = dataPoint.values()
