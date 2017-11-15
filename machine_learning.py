@@ -17,8 +17,11 @@ def run_program(name_of_atr_file, name_of_training_file):
 
 
 
-
+'''
 if __name__ == '__main__':
     if(len(sys.argv) > 2):
         #print(str(sys.argv))
         run_program(sys.argv[1], sys.argv[2])
+'''
+
+run_program("ingredients.json", "training.json")
