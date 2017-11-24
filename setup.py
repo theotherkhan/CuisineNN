@@ -1,10 +1,13 @@
 #external
 from bitarray import bitarray
 import math
+import numpy as np
+
 
 #internal
 from jsonReader import decode
 from recipe import Recipe
+
 
 ''' HEADER INFO '''
 #none
@@ -49,3 +52,4 @@ def get_recipes(name_of_recipes_file, ingredientsIndexMapping):
         print(cook)'''
     
     return cookbook
+
