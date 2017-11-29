@@ -60,19 +60,21 @@ def train_test():
 
     return tr_f, tr_l, te_f, te_l
 
-def label_vectors(yhat):
+def label_vectors():
     ''' generate correct train label arrays '''
-    y = np.zeros_like(yhat)
+    #y = np.zeros([897, 20])
+    y = np.full([897, 20], 0.1, dtype=float)
+
     for i in range (0, len(training_labels)):
         #print "set at coord: ", i, training_labels[i][0]
-        y[i][training_labels[i][0]] = 1
+        y[i][training_labels[i][0]] = 0.9
     return y
 
-def print_predictions(yhat, training_labels):
+def some_predictions(yhat, training_labels):
     '''prints NN Cuisine predictions alongside true labels''' 
     print "\nPredictions:\n"
 
-    for i in range (0, len(yhat)):      
+    for i in range (0, 400, 20):  #len(yhat) (shorten predictions)   
         true_label = np.max(training_labels[i])
         output_label = np.argmax(yhat[i]) 
 
@@ -105,7 +107,7 @@ training_features, training_labels, testing_features, testing_labels = train_tes
 
 num_features = len(ingr[1]) 
 num_labels = 20
-num_hidden = 4000
+num_hidden = 4000 # lower this
 
 #print training_features
 #print training_labels
@@ -115,28 +117,70 @@ num_hidden = 4000
 ## FORWARD PROPOGATION #############################
 
 nn = ANN(num_features, num_labels, num_hidden)
-yhat  = nn.forwardProp(training_features)
-y = label_vectors(yhat)
+y = label_vectors() 
+
+print "\nWeight W1:", nn.W1
+#print "\nWeight W2:", nn.W2
+
+yhat = nn.forwardProp(training_features)
+
+print "\nyhat: ", yhat
+
+print "\ny: ", y
+
+some_predictions(yhat, training_labels)
+
+cost1 = nn.costFunction(yhat,y)
+
+print "Cost1: ", cost1
+
+dJdW1, dJdW2  = nn.costFunctionPrime(yhat, y, training_features)
+
+print "\ndJdW1:", dJdW1
+print "\nUpdating weights..."
+
+scalar = 100
+nn.W1 = nn.W1 - scalar*dJdW1
+nn.W2 = nn.W2 - scalar*dJdW2
+
+#print "\nWeight W1:", nn.W1
+
+yhatt = nn.forwardProp(training_features)
+
+cost2 = nn.costFunction(yhatt,y)
+
+print "\nCost1 Avg: ", np.sum(cost1)/len(cost1)
+print "\nCost2 Avg: ", np.sum(cost2)/len(cost2)
+
+#print "\nCost2: ", cost2
+
+print "********************************************************"
+
 
 #predictions(yhat, training_labels)
-#print_predictions(yhat, training_labels)
+some_predictions(yhatt, training_labels)
 
-## COST CALCULATION ################################
+'''
+cost1 = nn.costFunction(y, yhat)
 
-costs = nn.costFunction(training_features, y)
+nn.back_pass(yhat, y, training_features)
+yhatt  = nn.forwardProp(training_features)
 
-scalar = 3
-cost_avg1 = np.sum(costs)/len(costs)
-print "First cost average: ", cost_avg1
+cost2 = nn.costFunction(y, yhatt)
 
-# Not working rn 
-for i in range (2):
-    dJdW1, dJdW2 = nn.costFunctionPrime(training_features,y)
-    nn.W1 = nn.W1 + scalar*dJdW1
-    nn.W2 = nn.W2 + scalar*dJdW2
-    costs2 = nn.costFunction(training_features,y)
-    cost_avg2 = np.sum(costs2)/len(costs2)
-    print "Current cost average: ", cost_avg2
+#print "\nCost1: ", cost1
+#print "\nCost2: ", cost2
+
+print "\n \n"
+
+print_predictions(yhat, training_labels)
+
+'''
+
+
+
+
+
 
 
 
