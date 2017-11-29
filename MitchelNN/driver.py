@@ -5,7 +5,6 @@ import pandas as pd
 from bitarray import bitarray
 from network import ANN
 
-
 num_features = 8
 num_labels = 8
 num_hidden = 3 
@@ -14,7 +13,8 @@ epochs = 5000
 epoch = 1
 
 
-training = np.array([ ['10000000', '10000000'],
+training = np.array([ 
+['10000000', '10000000'],
 ['01000000', '01000000'],
 ['00100000', '00100000'],
 ['00010000', '00010000'],
@@ -50,21 +50,22 @@ print ("\nWeight W2:", nn.W2)
 output = nn.forward(training_features) #probs of last layer
 print ("\nOutput: ", output)
 
-sqes = nn.cost(output, training_labels) #array with all squared errors for all examples 
-print ("\nCost: ", sqes)
-avg_sqe = sum(sqes)/len(sqes) #average mean squared error across all examples
-print ("\nCost Average on epoch", epoch, ": ", avg_sqe)
+msqe = nn.get_mean_squared_error_for_epoch(output, training_labels) #array with all squared errors for all examples 
+print ("\nMean Squared Error: ", msqe)
 
-dJdW1, dJdW2 = nn.costFunctionPrime(output, training_labels, training_features)
+#nn.a1 is the output from the hidden layer
+#nn.w2 is the weights from the hidden to the output layer
+
+#dJdW1, dJdW2 = nn.costFunctionPrime(output, training_labels, training_features)
 #dJdW1, dJdW2 = nn.costFunctionPrime(output, training_labels, training_features)
 
 
-print ("\ndJdW2: ", dJdW2)
+#print ("\ndJdW2: ", dJdW2)
 #print ("\ndJdW2 w/ learning rate: ", dJdW2*l_rate)
 
-nn.w_update(dJdW1, dJdW2, l_rate)
+#nn.w_update(dJdW1, dJdW2, l_rate)
 
-print ("\nUpdated Weight W2:", nn.W2)
+#print ("\nUpdated Weight W2:", nn.W2)
 
 
 
