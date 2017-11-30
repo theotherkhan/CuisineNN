@@ -2,27 +2,30 @@
 from setup import get_ingredients, get_recipes
 import numpy as np
 from NN import ANN
+import pandas as pd
+
+#global ingr
+#global recps
+global label_maps
 
 ingr = get_ingredients("ingredients.json")
 recps = get_recipes("training.json", ingr[1])
 
-global label_maps
-
 label_maps = {"brazilian":0, "british":1, 
-     "cajun_creole":2,"chinese":3,
-     "filipino": 4,"french": 5,
-     "greek": 6,"indian": 7,
-     "irish": 8,"italian": 9,
-     "jamaican": 10,
-     "japanese": 11,
-     "korean": 12,
-     "mexican": 13,
-     "moroccan": 14,
-     "russian": 15,
-     "southern_us": 16,
-     "spanish": 17,
-     "thai": 18,
-     "vietnamese": 19}
+ "cajun_creole":2,"chinese":3,
+ "filipino": 4,"french": 5,
+ "greek": 6,"indian": 7,
+ "irish": 8,"italian": 9,
+ "jamaican": 10,
+ "japanese": 11,
+ "korean": 12,
+ "mexican": 13,
+ "moroccan": 14,
+ "russian": 15,
+ "southern_us": 16,
+ "spanish": 17,
+ "thai": 18,
+ "vietnamese": 19}
 
 #####################################################################################
 
@@ -37,46 +40,47 @@ def train_test():
     te_f = np.empty([len(recps) - len(recps)/split_factor, len(ingr[0])])
     te_l = np.empty([len(recps) - len(recps)/split_factor, 1], dtype = int)
 
-    tr_lv = np.empty([len(recps)/split_factor, 1]) 
-    te_lv = np.empty([len(recps)/split_factor, 1]) 
-
     for i in range (0, len(recps)): 
         if i % 2 == 0:  
-            tr_f[i/2] = (np.asarray(list(recps[i].ingredients), dtype = int)+1) 
+            tr_f[i/2] = (np.asarray(list(recps[i].ingredients), dtype = int)) 
             c_recipe = recps[i].uid.encode("ascii")
             tr_l[i/2] = label_maps[c_recipe]
 
         else:
-            te_f[(i-1)/2] = (np.asarray(list(recps[i].ingredients), dtype = int)+1)
+            te_f[(i-1)/2] = (np.asarray(list(recps[i].ingredients), dtype = int))
             c_recipe = recps[i].uid.encode("ascii")
             te_l[(i-1)/2] = label_maps[c_recipe]
 
-    print "\nT&T sizes: \n"
-    print "Training feature: ", tr_f.shape
-    print "Training label: ", tr_l.shape
-    print "Testing feature", te_f.shape
-    print "Testing label", te_l.shape
-    
+    #print ("\nT&T sizes: \n")
+    #print "Training feature shape: ", tr_f.shape
+    #print ("Training label: ", tr_l.shape)
+    #print ("Testing feature", te_f.shape)
+    #print ("Testing label", te_l.shape)
+
+    tr_l = label_vectors(tr_l)
+    te_l = label_vectors(te_l)  
 
     return tr_f, tr_l, te_f, te_l
 
-def label_vectors():
+def label_vectors(training_labels):
     ''' generate correct train label arrays '''
     #y = np.zeros([897, 20])
-    y = np.full([897, 20], 0.1, dtype=float)
+    y = np.full([897, 20], 0.005, dtype=float)
 
     for i in range (0, len(training_labels)):
         #print "set at coord: ", i, training_labels[i][0]
         y[i][training_labels[i][0]] = 0.9
     return y
 
-def some_predictions(yhat, training_labels):
+def some_predictions(output, training_labels):
     '''prints NN Cuisine predictions alongside true labels''' 
-    print "\nPredictions:\n"
+    print ("\nPredictions:\n")
+    #true = ''
 
-    for i in range (0, 400, 20):  #len(yhat) (shorten predictions)   
+    #for i in range (0, 400, 20):  #len(yhat) (shorten predictions) 
+    for i in range(len(output)):
         true_label = np.max(training_labels[i])
-        output_label = np.argmax(yhat[i]) 
+        output_label = np.argmax(output[i]) 
 
         #print "Output: ", output_label, "True: ", true_label
         
@@ -88,16 +92,49 @@ def some_predictions(yhat, training_labels):
             if idd == true_label:
                 true = cuisine
 
-        print "Output, true: ", output, true
+        print ("Output, true: ", output, true)
 
-def predictions(yhat, training_labels):
+def predictions(output, training_labels):
     '''prints cuisine ID predictions alongside true labels, as tuples''' 
     predictions = [] 
-    for i in range (0, len(yhat)):      
-        true_label = np.max(training_labels[i])
-        output_label = np.argmax(yhat[i]) 
+    for i in range (0, len(output)):      
+        true_label = np.argmax(testing_labels[i])
+        output_label = np.argmax(output[i]) 
         predictions.append((output_label, true_label))
     print "Predictions: \n", predictions
+
+def cleanOutputDisplay(output):
+    # Clean the outputs
+    o = np.zeros_like(output)    
+    for r in range (len(output)):
+        o[r][np.argmax(output[r])] = 1
+    
+    o = np.asarray(o, dtype = int)
+    return o
+
+def cuisine_labels(testing_labels):
+    cuisine_labels = np.empty([len(testing_labels)], dtype = str)
+
+    for example in range(len(testing_labels)):
+        output_label_id = np.argmax(testing_labels[example])
+
+        for cuisine, idd in label_maps.items():  
+            if idd == output_label_id:
+                cuisine_labels[example] = cuisine
+
+    return cuisine_labels
+
+def acc(output, testing_labels):
+    match = 0.0
+    for i in range (len(output)):
+        #print output[i], testing_labels[i]
+        if output[i] == testing_labels[i]:
+            match+=1
+    return float(match)/float(len(output))
+
+
+
+
 
 #####################################################################################
 #####################################################################################
@@ -107,75 +144,76 @@ training_features, training_labels, testing_features, testing_labels = train_tes
 
 num_features = len(ingr[1]) 
 num_labels = 20
-num_hidden = 4000 # lower this
+num_hidden = 10 
+l_rate = 0.01
+epochs = 5000
 
-#print training_features
-#print training_labels
-#print testing_features
-#print testing_labels
+#print "\nTraining features: ", training_features
+#print "\nTesting labels: ", testing_labels
 
-## FORWARD PROPOGATION #############################
+#print "\nTesting labels (r): ", cuisine_labels(testing_labels)
+
+#print "\nTesting features: ", testing_features
+#print "\nTesting labels: ", testing_labels
+
+
+
+## RUNNING THE NETWORK #############################
+
 
 nn = ANN(num_features, num_labels, num_hidden)
-y = label_vectors() 
 
-print "\nWeight W1:", nn.W1
-#print "\nWeight W2:", nn.W2
+for e in range (epochs):
 
-yhat = nn.forwardProp(training_features)
+    output = nn.forward(training_features)
+    #print ("\nOutput: ", output)
 
-print "\nyhat: ", yhat
+    cost = nn.cost(output, training_labels)
+    avg_cost = sum(cost)/len(cost) 
+    #print "Average cost on epoch", e, ": ", avg_cost
 
-print "\ny: ", y
+    dJdW1, dJdW2, dJdB1, dJdB2 = nn.costFunctionPrime(output, training_labels, training_features)
 
-some_predictions(yhat, training_labels)
+    '''
+    print ("\nb1:", nn.b1)
+    print ("\ndJdB1: ", dJdB1)
+    
+    print ("\nb2:", nn.b2)
+    print ("\ndJdB2: ", dJdB2) 
+    
+    print ("\nW1", nn.W1)
+    print ("\ndJdW1: ", dJdW1)
+    
+    print ("\nW2", nn.W2)
+    print ("\ndJdW2: ", dJdW2)
+    '''
+    
+    nn.w_update(dJdW1, dJdW2, dJdB1, dJdB2, l_rate)
+    
+    '''
+    print ("\nUpdated B1: ", nn.b1)
+    print ("\nUpdated B2: ", nn.b2)
+    print ("\nUpdated Weight W1:", nn.W2)
+    print ("\nUpdated Weight W2:", nn.W2)
+    '''
 
-cost1 = nn.costFunction(yhat,y)
+output = nn.forward(testing_features)
 
-print "Cost1: ", cost1
+cleanO = cleanOutputDisplay(output)
+cleanT = cleanOutputDisplay(testing_labels)
 
-dJdW1, dJdW2  = nn.costFunctionPrime(yhat, y, training_features)
+print "\nEnd cost: ", avg_cost
+#print "\nOutputs", output
+#print "\nClean outputs:\n ", pd.DataFrame(cleanO).head()
+#print "\nTesting labels:\n", pd.DataFrame(cleanT).head()
 
-print "\ndJdW1:", dJdW1
-print "\nUpdating weights..."
+print "\nOutputs (r):\n ", cuisine_labels(output)
+print "\nTesting labels (r): ", cuisine_labels(testing_labels)
+print "\nAccuracy: ", acc( cuisine_labels(output), cuisine_labels(testing_labels))
 
-scalar = 100
-nn.W1 = nn.W1 - scalar*dJdW1
-nn.W2 = nn.W2 - scalar*dJdW2
-
-#print "\nWeight W1:", nn.W1
-
-yhatt = nn.forwardProp(training_features)
-
-cost2 = nn.costFunction(yhatt,y)
-
-print "\nCost1 Avg: ", np.sum(cost1)/len(cost1)
-print "\nCost2 Avg: ", np.sum(cost2)/len(cost2)
-
-#print "\nCost2: ", cost2
-
-print "********************************************************"
+#some_predictions(output, testing_labels)
 
 
-#predictions(yhat, training_labels)
-some_predictions(yhatt, training_labels)
-
-'''
-cost1 = nn.costFunction(y, yhat)
-
-nn.back_pass(yhat, y, training_features)
-yhatt  = nn.forwardProp(training_features)
-
-cost2 = nn.costFunction(y, yhatt)
-
-#print "\nCost1: ", cost1
-#print "\nCost2: ", cost2
-
-print "\n \n"
-
-print_predictions(yhat, training_labels)
-
-'''
 
 
 
