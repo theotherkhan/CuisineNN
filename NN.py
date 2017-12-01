@@ -16,7 +16,6 @@ class ANN(object):
 
 	def forward(self, X):
 		'''Propagate inputs though network'''
-		#print "\nDoing forward prop..."
 		self.z1 = np.dot(X, self.W1) #+ self.b1
 		self.a1 = self.sigmoid(self.z1)
 		self.z2 = np.dot(self.a1, self.W2)# + self.b2
@@ -24,12 +23,10 @@ class ANN(object):
 		return output
 
 	def sigmoid (self,z):
-		#signal = np.clip( z, -500, 500 )
 		return 1/(1+np.exp(-z))
 
 	def sigmoidPrime(self,z):
 		#Gradient of sigmoid
-		#signal = np.clip( z, -500, 500 )
 		return np.exp(-z)/((1+np.exp(-z))**2)
 	
 	def cost(self, output, true):
@@ -37,7 +34,6 @@ class ANN(object):
 		#print ("\nCalculating cost...")
 		C = (output-true)**2
 		C_hat = []
-
 		for row in C:
 			C_hat.append(sum(row))
 
@@ -48,8 +44,6 @@ class ANN(object):
 
 		delta2 = np.multiply(-(output-true), self.sigmoidPrime(self.z2))
 		dJdW2 = np.dot(self.a1.T, delta2)
-
-		#print ("\nDelta2: ", delta2)
 
 		delta1 = np.dot(delta2, self.W2.T)*self.sigmoidPrime(self.z1)
 		dJdW1 = np.dot(training_features.T, delta1)
@@ -68,22 +62,4 @@ class ANN(object):
 		self.b2 = self.b2 + (lr * 0.01 * db2)
 
 
-'''
-	def costFunctionPrime(self, yhat, y, X):
-
-		#print "\nDoing backprop..."
-		#Compute derivative with respect to W and W2 for a given X and y:
-		self.yHat = yhat
-
-		delta3 = np.multiply(-(y-self.yHat), self.sigmoidPrime(self.z3))
-		dJdW2 = np.dot(self.a2.T, delta3)
-
-		delta2 = np.dot(delta3, self.W2.T)*self.sigmoidPrime(self.z2)
-		dJdW1 = np.dot(X.T, delta2) 
-
-		#print "\ndJdW1: ", dJdW1 
-		#print "\ndJdW2: ", dJdW2 
-
-		return dJdW1, dJdW2
-'''
 		
