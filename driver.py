@@ -29,8 +29,103 @@ label_maps = {"brazilian":0, "british":1,
 
 #####################################################################################
 
+
+def label_vectors(training_labels, k_group_size, num_labels, def_label_init):
+    ''' generate correct train label arrays '''
+
+    y = np.full([k_group_size, num_labels], def_label_init, dtype=float)
+    
+    for i in range (0, len(training_labels)):
+        y[i][training_labels[i][0]] = 0.9
+    
+    return y
+
+def predictions(output, training_labels):
+    '''prints cuisine ID predictions alongside true labels, as tuples''' 
+    predictions = [] 
+    for i in range (0, len(output)):      
+        true_label = np.argmax(testing_labels[i])
+        output_label = np.argmax(output[i]) 
+        predictions.append((output_label, true_label))
+    print "Predictions: \n", predictions
+
+def cleanOutputDisplay(x):
+    '''Cleans labels into a readable, interpretable format'''
+    o = np.zeros_like(x)  
+    for r in range (len(x)):
+        o[r][np.argmax(x[r])] = 1
+    
+    o = np.asarray(o, dtype = int)
+    return o
+
+def cuisine_labels(testing_labels):
+    '''Converts testing labels arrays into readable labels''' 
+    cuisine_labels = np.empty([len(testing_labels)], dtype = str)
+
+    for example in range(len(testing_labels)):
+        output_label_id = np.argmax(testing_labels[example])
+
+        for cuisine, idd in label_maps.items():  
+            if idd == output_label_id:
+                cuisine_labels[example] = cuisine
+
+    return cuisine_labels
+
+def acc(output, testing_labels):
+    ''' Given output predictions and true labels, returns network accuracy'''
+    match = 0.0
+    for i in range (len(output)):
+        #print output[i], testing_labels[i]
+        if output[i] == testing_labels[i]:
+            match+=1
+    return float(match)/float(len(output))
+
+def tt(feature_clusters, label_clusters, k):
+    ''' Returns a list of all possible train/test sets in accordance with given k-fold cross validation'''
+    allPossible = []
+    
+    for i in range (1):
+        
+        testing_features = np.asarray(feature_clusters[i].tolist())
+        testing_labels = np.asarray(label_clusters[i])
+
+        if (i==0):
+            #print "tuple: ", feature_clusters[i+1:]
+            training_features = np.concatenate(feature_clusters[i+1:].tolist())
+            training_labels = np.concatenate(label_clusters[i+1:].tolist()) 
+        elif(i==k):
+            training_features = np.concatenate(feature_clusters[:i].tolist()) 
+            training_labels = np.concatenate(label_clusters[:i].tolist())
+        else: 
+            training_features = np.concatenate( np.concatenate(feature_clusters[i+1:].tolist()), np.concatenate(feature_clusters[:i].tolist()))  
+            training_labels = np.concatenate(np.concatenate(label_clusters[i+1:].tolist()), np.concatenate(label_clusters[:i].tolist()))  
+
+        allPossible.append([training_features, training_labels, testing_features, testing_labels])
+    
+    return allPossible
+
+def cf_validation(k, recps, num_datapoints):
+
+    feature_clusters = np.empty([k, num_datapoints/k], dtype = list)
+    label_clusters = np.empty([k, num_datapoints/k]) 
+
+    for group in range(0, k):
+        cluster_i = 0
+        for i in range (0, len(recps)-1, k): 
+            #while i < len(recps) 
+            #print "group, cluster_i:", group, cluster_i
+            feature_clusters[group][cluster_i] = (np.asarray(list(recps[i].ingredients), dtype = int)) 
+
+            c_recipe = recps[i].uid.encode("ascii")
+            label_clusters[group][cluster_i] = label_maps[c_recipe]
+
+            cluster_i +=1
+
+    return feature_clusters, label_clusters
+
+# This function is for holdover cross validation; debugging purpose only:
 def train_test():
-    ''' Generates nicely dispersed training and testing data '''
+    ''' Generates nicely dispersed training and testing data, holdover cv '''
 
     split_factor = 2
     
@@ -51,111 +146,62 @@ def train_test():
             c_recipe = recps[i].uid.encode("ascii")
             te_l[(i-1)/2] = label_maps[c_recipe]
 
-    #print ("\nT&T sizes: \n")
-    #print "Training feature shape: ", tr_f.shape
-    #print ("Training label: ", tr_l.shape)
-    #print ("Testing feature", te_f.shape)
-    #print ("Testing label", te_l.shape)
-
-    tr_l = label_vectors(tr_l)
-    te_l = label_vectors(te_l)  
+    tr_l = label_vectors(tr_l, 897, 20, 0.05)
+    te_l = label_vectors(te_l, 897, 20, 0.05)  
 
     return tr_f, tr_l, te_f, te_l
 
-def label_vectors(training_labels):
-    ''' generate correct train label arrays '''
-    #y = np.zeros([897, 20])
-    y = np.full([897, 20], 0.005, dtype=float)
-
-    for i in range (0, len(training_labels)):
-        #print "set at coord: ", i, training_labels[i][0]
-        y[i][training_labels[i][0]] = 0.9
-    return y
-
-def some_predictions(output, training_labels):
-    '''prints NN Cuisine predictions alongside true labels''' 
-    print ("\nPredictions:\n")
-    #true = ''
-
-    #for i in range (0, 400, 20):  #len(yhat) (shorten predictions) 
-    for i in range(len(output)):
-        true_label = np.max(training_labels[i])
-        output_label = np.argmax(output[i]) 
-
-        #print "Output: ", output_label, "True: ", true_label
-        
-        for cuisine, idd in label_maps.items():  
-            if idd == output_label:
-                output = cuisine
-        
-        for cuisine, idd in label_maps.items():  
-            if idd == true_label:
-                true = cuisine
-
-        print ("Output, true: ", output, true)
-
-def predictions(output, training_labels):
-    '''prints cuisine ID predictions alongside true labels, as tuples''' 
-    predictions = [] 
-    for i in range (0, len(output)):      
-        true_label = np.argmax(testing_labels[i])
-        output_label = np.argmax(output[i]) 
-        predictions.append((output_label, true_label))
-    print "Predictions: \n", predictions
-
-def cleanOutputDisplay(output):
-    # Clean the outputs
-    o = np.zeros_like(output)    
-    for r in range (len(output)):
-        o[r][np.argmax(output[r])] = 1
-    
-    o = np.asarray(o, dtype = int)
-    return o
-
-def cuisine_labels(testing_labels):
-    cuisine_labels = np.empty([len(testing_labels)], dtype = str)
-
-    for example in range(len(testing_labels)):
-        output_label_id = np.argmax(testing_labels[example])
-
-        for cuisine, idd in label_maps.items():  
-            if idd == output_label_id:
-                cuisine_labels[example] = cuisine
-
-    return cuisine_labels
-
-def acc(output, testing_labels):
-    match = 0.0
-    for i in range (len(output)):
-        #print output[i], testing_labels[i]
-        if output[i] == testing_labels[i]:
-            match+=1
-    return float(match)/float(len(output))
-
-
-
-
 
 #####################################################################################
 #####################################################################################
 
-training_features, training_labels, testing_features, testing_labels = train_test()
-
-
-num_features = len(ingr[1]) 
+# Hyperparamters
+num_features = len(ingr[1])
+num_datapoints = 1794
 num_labels = 20
 num_hidden = 10 
 l_rate = 0.01
 epochs = 5000
+k = 6
+k_group_size = num_datapoints / k
+def_label_init = 0.005
 
-#print "\nTraining features: ", training_features
-#print "\nTesting labels: ", testing_labels
+# Non cross validation train/test
+training_featuresB, training_labelsB, testing_featuresB, testing_labelsB = train_test()
 
-#print "\nTesting labels (r): ", cuisine_labels(testing_labels)
+# Build cross validation train/test
+feature_clusters, label_clusters = cf_validation(k, recps, num_datapoints)
+training_features, training_labels, testing_features, testing_labels = tt(feature_clusters, label_clusters, k)[0]
 
-#print "\nTesting features: ", testing_features
-#print "\nTesting labels: ", testing_labels
+testing_labels = np.reshape(testing_labels, (k_group_size, 1))
+testing_labels = label_vectors(testing_labels, k_group_size, num_labels, def_label_init)
 
+training_labels = np.reshape(training_labels, (k_group_size*(k-1), 1))
+training_labels = label_vectors(training_labels, k_group_size*(k-1), num_labels, def_label_init)
+
+#training_features.shape = (1495, 2398)
+
+print "TF types: ", type(training_features), type(training_features[0]), type(training_features[0][0])
+print "TFB types: ", type(training_featuresB), type(training_featuresB[0]), type(training_featuresB[0][0])
+
+print "Training feature shapes: ", training_features.shape, training_features[0].shape, training_features[0][0].shape
+print "Training feature B shape, type: ", training_featuresB.shape, training_featuresB[0].shape, training_featuresB[0][0].shape
+
+print "Testing feature shapes: ", testing_features.shape, testing_features[0].shape, testing_features[0][0].shape
+print "Testing feature B shape, type: ", testing_featuresB.shape, testing_featuresB[0].shape, testing_featuresB[0][0].shape
+
+#print "Training labels shape: ", training_labels.shape
+print "\nTraining label shapes: ", training_labels.shape
+print "Training label B shape, type: ", training_labelsB.shape
+
+print "Testing label shapes: ", testing_labels.shape
+print "Testing label B shape, type: ", testing_labelsB.shape
+
+
+#print "Testing labels shape: ", testing_labels.shape
+
+print "\nTesting labels: ", testing_labels
+print "\nTesting labels B: ", testing_labelsB
 
 
 ## RUNNING THE NETWORK #############################
@@ -166,11 +212,12 @@ nn = ANN(num_features, num_labels, num_hidden)
 for e in range (epochs):
 
     output = nn.forward(training_features)
+    print "otuput shape:", output.shape
     #print ("\nOutput: ", output)
 
     cost = nn.cost(output, training_labels)
     avg_cost = sum(cost)/len(cost) 
-    #print "Average cost on epoch", e, ": ", avg_cost
+    print "Average cost on epoch", e, ": ", avg_cost
 
     dJdW1, dJdW2, dJdB1, dJdB2 = nn.costFunctionPrime(output, training_labels, training_features)
 
@@ -186,8 +233,8 @@ for e in range (epochs):
     
     print ("\nW2", nn.W2)
     print ("\ndJdW2: ", dJdW2)
-    '''
     
+    '''
     nn.w_update(dJdW1, dJdW2, dJdB1, dJdB2, l_rate)
     
     '''
@@ -212,7 +259,6 @@ print "\nTesting labels (r): ", cuisine_labels(testing_labels)
 print "\nAccuracy: ", acc( cuisine_labels(output), cuisine_labels(testing_labels))
 
 #some_predictions(output, testing_labels)
-
 
 
 
