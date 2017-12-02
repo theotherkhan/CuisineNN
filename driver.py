@@ -9,7 +9,7 @@ import pandas as pd
 
 # Adjustable Hyperparameters
 ################################################
-epochs = 50
+epochs = 2000
 k = 6
 ################################################
 
