@@ -1,16 +1,25 @@
+<<<<<<< Updated upstream
 
 # driver.py
 # Hasan Khan, Zach Danz
 
+=======
+>>>>>>> Stashed changes
 from setup import get_ingredients, get_recipes
 import numpy as np
+import sys
+import time
+from tqdm import *
 from NN import ANN
 import pandas as pd
 
 global label_maps
 
-ingr = get_ingredients("ingredients.json")
-recps = get_recipes("training.json", ingr[1])
+if(len(sys.argv) < 3):
+    sys.exit(-1)
+
+ingr = get_ingredients(sys.argv[1])
+recps = get_recipes(sys.argv[2], ingr[1])
 
 label_maps = {"brazilian":0, "british":1, 
  "cajun_creole":2,"chinese":3,
@@ -121,6 +130,10 @@ def cf_validation(k, recps, num_datapoints):
             cluster_i +=1
 
     return feature_clusters, label_clusters
+
+def status():
+    for i in tqdm(range(10)):
+        time.sleep(3)
 
 # This function is for holdover cross validation; debugging purpose only:
 def train_test():
