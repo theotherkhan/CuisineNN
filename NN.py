@@ -16,9 +16,9 @@ class ANN(object):
 
 	def forward(self, X):
 		'''Propagate inputs though network'''
-		self.z1 = np.dot(X, self.W1) #+ self.b1
+		self.z1 = np.dot(X, self.W1) + self.b1
 		self.a1 = self.sigmoid(self.z1)
-		self.z2 = np.dot(self.a1, self.W2)# + self.b2
+		self.z2 = np.dot(self.a1, self.W2) + self.b2
 		output = self.sigmoid(self.z2) 
 		return output
 
@@ -57,8 +57,8 @@ class ANN(object):
 		self.W1 = self.W1 + (lr * dw1)
 		self.W2 = self.W2 + (lr * dw2)
 
-		self.b1 = self.b1 + (lr * 0.01 * db1)
-		self.b2 = self.b2 + (lr * 0.01 * db2)
+		self.b1 = self.b1 + (lr * db1)
+		self.b2 = self.b2 + (lr * db2)
 
 
 		

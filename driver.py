@@ -1,17 +1,17 @@
-<<<<<<< Updated upstream
-
 # driver.py
 # Hasan Khan, Zach Danz
-
-=======
->>>>>>> Stashed changes
 from setup import get_ingredients, get_recipes
 import numpy as np
 import sys
-import time
 from tqdm import *
 from NN import ANN
 import pandas as pd
+
+# Adjustable Hyperparameters
+################################################
+epochs = 50
+k = 6
+################################################
 
 global label_maps
 
@@ -131,10 +131,6 @@ def cf_validation(k, recps, num_datapoints):
 
     return feature_clusters, label_clusters
 
-def status():
-    for i in tqdm(range(10)):
-        time.sleep(3)
-
 # This function is for holdover cross validation; debugging purpose only:
 def train_test():
     ''' Generates nicely dispersed training and testing data, holdover cv '''
@@ -163,14 +159,12 @@ def train_test():
 
     return tr_f, tr_l, te_f, te_l
 
-
-
 #### RUN NN FUNCTION ##################################################################
 
-def run(num_features, num_labels, num_hidden, training_features, training_labels, testing_features, testing_labels):
+def run(num_features, num_labels, num_hidden, training_features, training_labels, testing_features, testing_labels, loop_num):
     nn = ANN(num_features, num_labels, num_hidden)
 
-    for e in range (epochs):
+    for e in tqdm(range(epochs), desc="K fold: "+str(loop_num), unit=" epochs"):
 
         output = nn.forward(training_features)
         #print "output shape:", output.shape
@@ -210,7 +204,6 @@ def run(num_features, num_labels, num_hidden, training_features, training_labels
     cleanO = cleanOutputDisplay(output)
     cleanT = cleanOutputDisplay(testing_labels)
 
-    print "\tEnd cost: ", avg_cost
     #print "\nOutputs", output
     #print "\nClean outputs:\n ", pd.DataFrame(cleanO).head()
     #print "\nTesting labels:\n", pd.DataFrame(cleanT).head()
@@ -219,6 +212,7 @@ def run(num_features, num_labels, num_hidden, training_features, training_labels
     #print "\n\tTesting labels (r): ", cuisine_labels(testing_labels)
     accuracy = acc( cuisine_labels(output), cuisine_labels(testing_labels)) 
     print "\tAccuracy: ", accuracy
+    print "\tEnd cost: ", avg_cost
     return accuracy, avg_cost
 
     #return acc( cuisine_labels(output)
@@ -231,8 +225,6 @@ num_datapoints = 1794
 num_labels = 20
 num_hidden = 10 
 l_rate = 0.01
-epochs = 50
-k = 6
 k_group_size = num_datapoints / k
 def_label_init = 0.005
 accuracies = []
@@ -244,6 +236,7 @@ training_featuresB, training_labelsB, testing_featuresB, testing_labelsB = train
 # Build cross validation train/test
 feature_clusters, label_clusters = cf_validation(k, recps, num_datapoints)
 
+print "Program Started!"
 # Run network
 for i in range (k):
     
@@ -275,8 +268,8 @@ for i in range (k):
     print "\nTesting labels B: ", testing_labelsB
     '''
 
-    print "Run", i, ": "
-    accuracy, cost = run(num_features, num_labels, num_hidden, training_features, training_labels, testing_features, testing_labels)
+    print "\n"
+    accuracy, cost = run(num_features, num_labels, num_hidden, training_features, training_labels, testing_features, testing_labels, i)
     accuracies.append(accuracy)
     costs.append(cost)
 

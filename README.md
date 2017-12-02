@@ -5,3 +5,8 @@
 2. make sure to include in that directory ingredients.json and training.json
 3. execute `./run.sh`
   * NOTE: the bash script is currently configured to operate on ingredients.json and training.json; if you wish to change this, simply change those input statements for another json of attributes and training data.
+
+### Adjustable Parameters:
+These can be found at the top of driver.py under the comment 'Adjustable Hyperparameters'
+* epochs -> this is the number of back-propogations which will performed per fold
+* k -> this is the number of folds to divide training data input

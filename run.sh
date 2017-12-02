@@ -18,4 +18,13 @@ else
     echo "bitarray installed"
 fi
 
-python2 driver.py ingredients.json training.json
+if  pip show tqdm  > /dev/null
+then
+    :
+else
+    echo "tqdm installing..."
+    pip install tqdm
+    echo "tqdm installed"
+fi
+
+python2 -W ignore driver.py ingredients.json training.json
