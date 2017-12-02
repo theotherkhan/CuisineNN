@@ -31,7 +31,7 @@ And averages:
 |------	|--------------------	|--------------------	|--------------------	|--------------------	|
 | **AVRG** | 0.331661092531 	    | 0.712931995541 	    | 0.806020066890 	    | 0.852842809365 	    |
 
-![Average Accuracies Over Epoch Number](avgacc.png)
+![Average Accuracies Over Epoch Number](images/avgacc.png)
 
 ### Costs / Errors
 
@@ -51,3 +51,5 @@ And averages:
 |     	| 50 epochs      	    | 500 epochs          | 1000 epochs         | 2000 epochs    	    |
 |------	|--------------------	|--------------------	|--------------------	|--------------------	|
 | **AVRG** | 0.697852810679 	    | 0.295813174374 	    | 0.19958644691 	    | 0.135641106767 	    |
+
+![Average Accuracies Over Epoch Number](images/avgcost.png)
