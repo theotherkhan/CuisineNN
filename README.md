@@ -13,8 +13,7 @@ These can be found at the top of driver.py under the comment 'Adjustable Hyperpa
 
 ### Accuracies:
 
-Epochs:
-
+For 50, 500, 1000, and 2000 epochs:
 | FOLD 	| 50             	| 500            	| 1000           	| 2000           	|
 |------	|----------------	|----------------	|----------------	|----------------	|
 | 0    	| 0.311036789298 	| 0.698996655518 	| 0.839464882943 	| 0.846153846154 	|
