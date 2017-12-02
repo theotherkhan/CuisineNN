@@ -1,11 +1,12 @@
 
+# driver.py
+# Hasan Khan, Zach Danz
+
 from setup import get_ingredients, get_recipes
 import numpy as np
 from NN import ANN
 import pandas as pd
 
-#global ingr
-#global recps
 global label_maps
 
 ingr = get_ingredients("ingredients.json")
@@ -27,8 +28,7 @@ label_maps = {"brazilian":0, "british":1,
  "thai": 18,
  "vietnamese": 19}
 
-#####################################################################################
-
+#### PRE PROCESSING FUNCTIONS #######################################################
 
 def label_vectors(training_labels, k_group_size, num_labels, def_label_init):
     ''' generate correct train label arrays '''
@@ -80,25 +80,24 @@ def acc(output, testing_labels):
             match+=1
     return float(match)/float(len(output))
 
-def tt(feature_clusters, label_clusters, k):
+def kfold(feature_clusters, label_clusters, k):
     ''' Returns a list of all possible train/test sets in accordance with given k-fold cross validation'''
     allPossible = []
     
-    for i in range (1):
+    for i in range (k):
         
         testing_features = np.asarray(feature_clusters[i].tolist())
         testing_labels = np.asarray(label_clusters[i])
-
+        #print "i: ", i
         if (i==0):
-            #print "tuple: ", feature_clusters[i+1:]
             training_features = np.concatenate(feature_clusters[i+1:].tolist())
             training_labels = np.concatenate(label_clusters[i+1:].tolist()) 
-        elif(i==k):
+        elif(i==(k-1)):
             training_features = np.concatenate(feature_clusters[:i].tolist()) 
             training_labels = np.concatenate(label_clusters[:i].tolist())
         else: 
-            training_features = np.concatenate( np.concatenate(feature_clusters[i+1:].tolist()), np.concatenate(feature_clusters[:i].tolist()))  
-            training_labels = np.concatenate(np.concatenate(label_clusters[i+1:].tolist()), np.concatenate(label_clusters[:i].tolist()))  
+            training_features = np.concatenate( (np.concatenate(feature_clusters[i+1:].tolist()), np.concatenate(feature_clusters[:i].tolist())), axis=0)  
+            training_labels = np.concatenate( (np.concatenate(label_clusters[i+1:].tolist()), np.concatenate(label_clusters[:i].tolist())), axis=0)  
 
         allPossible.append([training_features, training_labels, testing_features, testing_labels])
     
@@ -152,124 +151,126 @@ def train_test():
     return tr_f, tr_l, te_f, te_l
 
 
-#####################################################################################
-#####################################################################################
 
-# Hyperparamters
+#### RUN NN FUNCTION ##################################################################
+
+def run(num_features, num_labels, num_hidden, training_features, training_labels, testing_features, testing_labels):
+    nn = ANN(num_features, num_labels, num_hidden)
+
+    for e in range (epochs):
+
+        output = nn.forward(training_features)
+        #print "output shape:", output.shape
+        #print ("\nOutput: ", output)
+
+        cost = nn.cost(output, training_labels)
+        avg_cost = sum(cost)/len(cost) 
+        #print "\tAverage cost on epoch", e, ": ", avg_cost
+
+        dJdW1, dJdW2, dJdB1, dJdB2 = nn.costFunctionPrime(output, training_labels, training_features)
+
+        '''
+        print ("\nb1:", nn.b1)
+        print ("\ndJdB1: ", dJdB1)
+        
+        print ("\nb2:", nn.b2)
+        print ("\ndJdB2: ", dJdB2) 
+        
+        print ("\nW1", nn.W1)
+        print ("\ndJdW1: ", dJdW1)
+        
+        print ("\nW2", nn.W2)
+        print ("\ndJdW2: ", dJdW2)
+        
+        '''
+        nn.w_update(dJdW1, dJdW2, dJdB1, dJdB2, l_rate)
+        
+        '''
+        print ("\nUpdated B1: ", nn.b1)
+        print ("\nUpdated B2: ", nn.b2)
+        print ("\nUpdated Weight W1:", nn.W2)
+        print ("\nUpdated Weight W2:", nn.W2)
+        '''
+
+    output = nn.forward(testing_features)
+
+    cleanO = cleanOutputDisplay(output)
+    cleanT = cleanOutputDisplay(testing_labels)
+
+    print "\tEnd cost: ", avg_cost
+    #print "\nOutputs", output
+    #print "\nClean outputs:\n ", pd.DataFrame(cleanO).head()
+    #print "\nTesting labels:\n", pd.DataFrame(cleanT).head()
+
+    #print "\n\tOutputs (r):\n ", cuisine_labels(output)
+    #print "\n\tTesting labels (r): ", cuisine_labels(testing_labels)
+    accuracy = acc( cuisine_labels(output), cuisine_labels(testing_labels)) 
+    print "\tAccuracy: ", accuracy
+    return accuracy, avg_cost
+
+    #return acc( cuisine_labels(output)
+
+#### DRIVER #######################################################################
+
+# Define hyperparameters
 num_features = len(ingr[1])
 num_datapoints = 1794
 num_labels = 20
 num_hidden = 10 
 l_rate = 0.01
-epochs = 5000
+epochs = 50
 k = 6
 k_group_size = num_datapoints / k
 def_label_init = 0.005
+accuracies = []
+costs = []
 
-# Non cross validation train/test
+# Non cross validation train/test (holdover cross validation)
 training_featuresB, training_labelsB, testing_featuresB, testing_labelsB = train_test()
 
 # Build cross validation train/test
 feature_clusters, label_clusters = cf_validation(k, recps, num_datapoints)
-training_features, training_labels, testing_features, testing_labels = tt(feature_clusters, label_clusters, k)[0]
 
-testing_labels = np.reshape(testing_labels, (k_group_size, 1))
-testing_labels = label_vectors(testing_labels, k_group_size, num_labels, def_label_init)
+# Run network
+for i in range (k):
+    
+    training_features, training_labels, testing_features, testing_labels = kfold(feature_clusters, label_clusters, k)[i]
+    
+    testing_labels = np.reshape(testing_labels, (k_group_size, 1))
+    testing_labels = label_vectors(testing_labels, k_group_size, num_labels, def_label_init)
 
-training_labels = np.reshape(training_labels, (k_group_size*(k-1), 1))
-training_labels = label_vectors(training_labels, k_group_size*(k-1), num_labels, def_label_init)
-
-#training_features.shape = (1495, 2398)
-
-print "TF types: ", type(training_features), type(training_features[0]), type(training_features[0][0])
-print "TFB types: ", type(training_featuresB), type(training_featuresB[0]), type(training_featuresB[0][0])
-
-print "Training feature shapes: ", training_features.shape, training_features[0].shape, training_features[0][0].shape
-print "Training feature B shape, type: ", training_featuresB.shape, training_featuresB[0].shape, training_featuresB[0][0].shape
-
-print "Testing feature shapes: ", testing_features.shape, testing_features[0].shape, testing_features[0][0].shape
-print "Testing feature B shape, type: ", testing_featuresB.shape, testing_featuresB[0].shape, testing_featuresB[0][0].shape
-
-#print "Training labels shape: ", training_labels.shape
-print "\nTraining label shapes: ", training_labels.shape
-print "Training label B shape, type: ", training_labelsB.shape
-
-print "Testing label shapes: ", testing_labels.shape
-print "Testing label B shape, type: ", testing_labelsB.shape
-
-
-#print "Testing labels shape: ", testing_labels.shape
-
-print "\nTesting labels: ", testing_labels
-print "\nTesting labels B: ", testing_labelsB
-
-
-## RUNNING THE NETWORK #############################
-
-
-nn = ANN(num_features, num_labels, num_hidden)
-
-for e in range (epochs):
-
-    output = nn.forward(training_features)
-    print "otuput shape:", output.shape
-    #print ("\nOutput: ", output)
-
-    cost = nn.cost(output, training_labels)
-    avg_cost = sum(cost)/len(cost) 
-    print "Average cost on epoch", e, ": ", avg_cost
-
-    dJdW1, dJdW2, dJdB1, dJdB2 = nn.costFunctionPrime(output, training_labels, training_features)
+    training_labels = np.reshape(training_labels, (k_group_size*(k-1), 1))
+    training_labels = label_vectors(training_labels, k_group_size*(k-1), num_labels, def_label_init)
 
     '''
-    print ("\nb1:", nn.b1)
-    print ("\ndJdB1: ", dJdB1)
-    
-    print ("\nb2:", nn.b2)
-    print ("\ndJdB2: ", dJdB2) 
-    
-    print ("\nW1", nn.W1)
-    print ("\ndJdW1: ", dJdW1)
-    
-    print ("\nW2", nn.W2)
-    print ("\ndJdW2: ", dJdW2)
-    
-    '''
-    nn.w_update(dJdW1, dJdW2, dJdB1, dJdB2, l_rate)
-    
-    '''
-    print ("\nUpdated B1: ", nn.b1)
-    print ("\nUpdated B2: ", nn.b2)
-    print ("\nUpdated Weight W1:", nn.W2)
-    print ("\nUpdated Weight W2:", nn.W2)
+    print "TF types: ", type(training_features), type(training_features[0]), type(training_features[0][0])
+    print "TFB types: ", type(training_featuresB), type(training_featuresB[0]), type(training_featuresB[0][0])
+
+    print "Training feature shapes: ", training_features.shape, training_features[0].shape, training_features[0][0].shape
+    print "Training feature B shape, type: ", training_featuresB.shape, training_featuresB[0].shape, training_featuresB[0][0].shape
+
+    print "Testing feature shapes: ", testing_features.shape, testing_features[0].shape, testing_features[0][0].shape
+    print "Testing feature B shape, type: ", testing_featuresB.shape, testing_featuresB[0].shape, testing_featuresB[0][0].shape
+
+    print "\nTraining label shapes: ", training_labels.shape
+    print "Training label B shape, type: ", training_labelsB.shape
+
+    print "Testing label shapes: ", testing_labels.shape
+    print "Testing label B shape, type: ", testing_labelsB.shape
+
+    print "\nTesting labels: ", testing_labels
+    print "\nTesting labels B: ", testing_labelsB
     '''
 
-output = nn.forward(testing_features)
+    print "Run", i, ": "
+    accuracy, cost = run(num_features, num_labels, num_hidden, training_features, training_labels, testing_features, testing_labels)
+    accuracies.append(accuracy)
+    costs.append(cost)
 
-cleanO = cleanOutputDisplay(output)
-cleanT = cleanOutputDisplay(testing_labels)
+avg_accuracy = np.sum(accuracies)/len(accuracies) 
+avg_cost = np.sum(costs)/len(costs)
 
-print "\nEnd cost: ", avg_cost
-#print "\nOutputs", output
-#print "\nClean outputs:\n ", pd.DataFrame(cleanO).head()
-#print "\nTesting labels:\n", pd.DataFrame(cleanT).head()
+print "\nAverage accuracies: ", avg_accuracy
+print "Average costs: ", avg_cost
 
-print "\nOutputs (r):\n ", cuisine_labels(output)
-print "\nTesting labels (r): ", cuisine_labels(testing_labels)
-print "\nAccuracy: ", acc( cuisine_labels(output), cuisine_labels(testing_labels))
-
-#some_predictions(output, testing_labels)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# End program

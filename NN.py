@@ -31,7 +31,6 @@ class ANN(object):
 	
 	def cost(self, output, true):
 		#Compute cost for given X,y, use weights already stored in class.
-		#print ("\nCalculating cost...")
 		C = (output-true)**2
 		C_hat = []
 		for row in C:
