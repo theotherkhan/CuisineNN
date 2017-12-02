@@ -9,8 +9,9 @@ import pandas as pd
 
 # Adjustable Hyperparameters
 ################################################
-epochs = 50
+epochs = 2000
 k = 6
+l_rate = 0.01
 ################################################
 
 global label_maps
@@ -40,7 +41,7 @@ label_maps = {"brazilian":0, "british":1,
 #### PRE PROCESSING FUNCTIONS #######################################################
 
 def label_vectors(training_labels, k_group_size, num_labels, def_label_init):
-    ''' generate correct train label arrays '''
+    ''' Generates numerical training label arrays, using recipe labels'''
 
     y = np.full([k_group_size, num_labels], def_label_init, dtype=float)
     
@@ -48,15 +49,6 @@ def label_vectors(training_labels, k_group_size, num_labels, def_label_init):
         y[i][training_labels[i][0]] = 0.9
     
     return y
-
-def predictions(output, training_labels):
-    '''prints cuisine ID predictions alongside true labels, as tuples''' 
-    predictions = [] 
-    for i in range (0, len(output)):      
-        true_label = np.argmax(testing_labels[i])
-        output_label = np.argmax(output[i]) 
-        predictions.append((output_label, true_label))
-    print "Predictions: \n", predictions
 
 def cleanOutputDisplay(x):
     '''Cleans labels into a readable, interpretable format'''
@@ -84,7 +76,6 @@ def acc(output, testing_labels):
     ''' Given output predictions and true labels, returns network accuracy'''
     match = 0.0
     for i in range (len(output)):
-        #print output[i], testing_labels[i]
         if output[i] == testing_labels[i]:
             match+=1
     return float(match)/float(len(output))
@@ -131,34 +122,6 @@ def cf_validation(k, recps, num_datapoints):
 
     return feature_clusters, label_clusters
 
-# This function is for holdover cross validation; debugging purpose only:
-def train_test():
-    ''' Generates nicely dispersed training and testing data, holdover cv '''
-
-    split_factor = 2
-    
-    tr_f = np.empty([len(recps)/split_factor, len(ingr[0])])
-    tr_l = np.empty([len(recps)/split_factor, 1], dtype = int) 
-
-    te_f = np.empty([len(recps) - len(recps)/split_factor, len(ingr[0])])
-    te_l = np.empty([len(recps) - len(recps)/split_factor, 1], dtype = int)
-
-    for i in range (0, len(recps)): 
-        if i % 2 == 0:  
-            tr_f[i/2] = (np.asarray(list(recps[i].ingredients), dtype = int)) 
-            c_recipe = recps[i].uid.encode("ascii")
-            tr_l[i/2] = label_maps[c_recipe]
-
-        else:
-            te_f[(i-1)/2] = (np.asarray(list(recps[i].ingredients), dtype = int))
-            c_recipe = recps[i].uid.encode("ascii")
-            te_l[(i-1)/2] = label_maps[c_recipe]
-
-    tr_l = label_vectors(tr_l, 897, 20, 0.05)
-    te_l = label_vectors(te_l, 897, 20, 0.05)  
-
-    return tr_f, tr_l, te_f, te_l
-
 #### RUN NN FUNCTION ##################################################################
 
 def run(num_features, num_labels, num_hidden, training_features, training_labels, testing_features, testing_labels, loop_num):
@@ -174,18 +137,15 @@ def run(num_features, num_labels, num_hidden, training_features, training_labels
         avg_cost = sum(cost)/len(cost) 
         #print "\tAverage cost on epoch", e, ": ", avg_cost
 
-        dJdW1, dJdW2, dJdB1, dJdB2 = nn.costFunctionPrime(output, training_labels, training_features)
+        dJdW1, dJdW2, dJdB1, dJdB2 = nn.backprop(output, training_labels, training_features)
 
         '''
         print ("\nb1:", nn.b1)
-        print ("\ndJdB1: ", dJdB1)
-        
+        print ("\ndJdB1: ", dJdB1)      
         print ("\nb2:", nn.b2)
-        print ("\ndJdB2: ", dJdB2) 
-        
+        print ("\ndJdB2: ", dJdB2)       
         print ("\nW1", nn.W1)
-        print ("\ndJdW1: ", dJdW1)
-        
+        print ("\ndJdW1: ", dJdW1)     
         print ("\nW2", nn.W2)
         print ("\ndJdW2: ", dJdW2)
         
@@ -210,12 +170,12 @@ def run(num_features, num_labels, num_hidden, training_features, training_labels
 
     #print "\n\tOutputs (r):\n ", cuisine_labels(output)
     #print "\n\tTesting labels (r): ", cuisine_labels(testing_labels)
+
     accuracy = acc( cuisine_labels(output), cuisine_labels(testing_labels)) 
+
     print "\tAccuracy: ", accuracy
     print "\tEnd cost: ", avg_cost
     return accuracy, avg_cost
-
-    #return acc( cuisine_labels(output)
 
 #### DRIVER #######################################################################
 
@@ -224,14 +184,10 @@ num_features = len(ingr[1])
 num_datapoints = 1794
 num_labels = 20
 num_hidden = 10 
-l_rate = 0.01
 k_group_size = num_datapoints / k
 def_label_init = 0.005
 accuracies = []
 costs = []
-
-# Non cross validation train/test (holdover cross validation)
-training_featuresB, training_labelsB, testing_featuresB, testing_labelsB = train_test()
 
 # Build cross validation train/test
 feature_clusters, label_clusters = cf_validation(k, recps, num_datapoints)
@@ -250,22 +206,10 @@ for i in range (k):
 
     '''
     print "TF types: ", type(training_features), type(training_features[0]), type(training_features[0][0])
-    print "TFB types: ", type(training_featuresB), type(training_featuresB[0]), type(training_featuresB[0][0])
-
     print "Training feature shapes: ", training_features.shape, training_features[0].shape, training_features[0][0].shape
-    print "Training feature B shape, type: ", training_featuresB.shape, training_featuresB[0].shape, training_featuresB[0][0].shape
-
     print "Testing feature shapes: ", testing_features.shape, testing_features[0].shape, testing_features[0][0].shape
-    print "Testing feature B shape, type: ", testing_featuresB.shape, testing_featuresB[0].shape, testing_featuresB[0][0].shape
-
-    print "\nTraining label shapes: ", training_labels.shape
-    print "Training label B shape, type: ", training_labelsB.shape
-
+    print "Training label shapes: ", training_labels.shape
     print "Testing label shapes: ", testing_labels.shape
-    print "Testing label B shape, type: ", testing_labelsB.shape
-
-    print "\nTesting labels: ", testing_labels
-    print "\nTesting labels B: ", testing_labelsB
     '''
 
     print "\n"
@@ -273,6 +217,7 @@ for i in range (k):
     accuracies.append(accuracy)
     costs.append(cost)
 
+# Calculate average accuracy and average cost
 avg_accuracy = np.sum(accuracies)/len(accuracies) 
 avg_cost = np.sum(costs)/len(costs)
 

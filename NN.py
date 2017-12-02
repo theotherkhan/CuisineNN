@@ -3,7 +3,7 @@ import numpy as np
 class ANN(object):
 	
 	def __init__ (self, num_features, num_labels, hidden_units):
-		''' Define layer sizes, init weights '''
+		''' Define layer sizes, initializes weights and biases '''
 		self.inputLayerSize = num_features
 		self.outputLayerSize = num_labels
 		self.hiddenLayerSize = hidden_units
@@ -23,23 +23,23 @@ class ANN(object):
 		return output
 
 	def sigmoid (self,z):
+		'''Applies sigmoid function'''
 		return 1/(1+np.exp(-z))
 
 	def sigmoidPrime(self,z):
-		#Gradient of sigmoid
+		'''Derivative of the sigmoid'''
 		return np.exp(-z)/((1+np.exp(-z))**2)
 	
 	def cost(self, output, true):
-		#Compute cost for given X,y, use weights already stored in class.
+		'''Compute cost for given X,y, use weights already stored in class.'''
 		C = (output-true)**2
 		C_hat = []
 		for row in C:
 			C_hat.append(sum(row))
-
 		return C_hat
 
-	def costFunctionPrime(self, output, true, training_features):
-		#Compute derivative with respect to W and W2 for a given X and y:
+	def backprop(self, output, true, training_features):
+		'''Compute the derivatives of W1 and W2'''
 
 		delta2 = np.multiply(-(output-true), self.sigmoidPrime(self.z2))
 		dJdW2 = np.dot(self.a1.T, delta2)
@@ -53,12 +53,13 @@ class ANN(object):
 		return dJdW1, dJdW2, dJdB1, dJdB2
 
 	def w_update(self, dw1, dw2, db1, db2, lr):
-		#print ("Updating weights...")
+		'''Update the weights and biases'''
 		self.W1 = self.W1 + (lr * dw1)
 		self.W2 = self.W2 + (lr * dw2)
 
 		self.b1 = self.b1 + (lr * db1)
 		self.b2 = self.b2 + (lr * db2)
+
 
 
 		
